@@ -1,0 +1,86 @@
+[project]
+name = "workshop-environment"
+version = "0.1.0"
+description = "Participant roster tooling for the AWS-hosted GDAL/Python workshop"
+requires-python = ">=3.14"
+dependencies = []
+
+[project.scripts]
+workshop = "workshop.cli:main"
+
+[dependency-groups]
+dev = [
+    "bandit>=1.8",
+    "mypy>=1.14",
+    "pre-commit>=4.0",
+    "pylint>=3.3",
+    "pytest>=8.0",
+    "pyyaml>=6.0",
+    "ruff>=0.8",
+    "types-pyyaml>=6.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/workshop"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+# The Google Python Style Guide sets the limit at 80. Ruff formats to it and
+# .pylintrc enforces it, so the two tools cannot disagree.
+line-length = 80
+target-version = "py314"
+src = ["src", "tests"]
+
+[tool.ruff.per-file-target-version]
+# This file is mounted into the JupyterHub hub image, which this project does
+# not build and which is not on Python 3.14. Targeting it separately stops Ruff
+# modernising it into syntax the hub cannot parse -- a rewrite to PEP 758's
+# parenthesis-free `except` would break every login.
+"charts/workshop/files/roster_authenticator.py" = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "D", "N", "ANN", "RUF"]
+ignore = [
+    # Google style documents the class, not __init__ separately.
+    "D107",
+    # A one-line summary may sit on the line after the opening quotes.
+    "D212",
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+# Test names are the documentation; a docstring on top of a sentence-long
+# function name is noise. Annotations on fixtures likewise buy nothing.
+"tests/*" = ["D100", "D103", "ANN001", "ANN201", "ANN202"]
+
+[tool.mypy]
+python_version = "3.14"
+files = ["src", "tests"]
+strict = true
+warn_unreachable = true
+# The hub-side authenticator is checked with its own relaxed settings below.
+
+[[tool.mypy.overrides]]
+# JupyterHub is not installed here on purpose: the authenticator is checked
+# against a stub in the test suite instead. See tests/conftest.py.
+module = ["jupyterhub.*", "yaml"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Tests use fixtures whose types are supplied by pytest at runtime.
+module = ["tests.*"]
+disallow_untyped_defs = false
+disallow_untyped_decorators = false
+disallow_untyped_calls = false
+
+[tool.bandit]
+exclude_dirs = [".venv", "tests"]

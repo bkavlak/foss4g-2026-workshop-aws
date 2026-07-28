@@ -1,0 +1,4 @@
+username,password
+# Deliberately discarded. This fixture roster exists only so that `tofu test`
+# can load the root module, which reads roster.json. Nobody ever logs in with
+# it, so the plaintext half was thrown away rather than committed.

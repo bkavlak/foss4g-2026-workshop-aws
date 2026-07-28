@@ -1,0 +1,111 @@
+# Quality gate. `make check` runs the same tools, so a commit that passes here
+# passes CI, and neither can be satisfied without the other.
+#
+#   pre-commit install                # once, after `make setup`
+#   pre-commit run --all-files        # check the whole tree
+#
+# Hooks are ordered cheapest-first so an obvious failure reports in a second
+# rather than after the security scanners have run.
+
+default_install_hook_types: [pre-commit, pre-push]
+minimum_pre_commit_version: "4.0.0"
+
+repos:
+  # --- hygiene -------------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+        # handout.csv is written by the csv module with CRLF so it opens
+        # cleanly in Excel. It is gitignored, but be explicit.
+        exclude: \.csv$
+      - id: check-yaml
+        # Helm templates are Go templates, not YAML, until they are rendered.
+        exclude: ^charts/.*/templates/
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: detect-private-key
+      - id: check-added-large-files
+        # data/ is expected to reach ~20 GB and belongs in S3, not in git.
+        # This is the hook that stops someone committing the dataset.
+        args: [--maxkb=512]
+
+  # --- secrets -------------------------------------------------------------
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
+
+  # --- python: format and lint --------------------------------------------
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  # --- python: types and inference-based lint ------------------------------
+  # These run from the project environment rather than an isolated one, because
+  # both need the real dependency set to say anything useful.
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: uv run mypy
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: pylint
+        name: pylint (google style)
+        entry: uv run pylint
+        language: system
+        types: [python]
+        args: [--rcfile=.pylintrc]
+
+  # --- python: security ----------------------------------------------------
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.8.0
+    hooks:
+      - id: bandit
+        args: [-c, pyproject.toml]
+        additional_dependencies: ["bandit[toml]"]
+
+  # --- container -----------------------------------------------------------
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.13.1-beta
+    hooks:
+      - id: hadolint-docker
+
+  # --- infrastructure ------------------------------------------------------
+  - repo: local
+    hooks:
+      - id: tofu-fmt
+        name: tofu fmt
+        entry: tofu fmt -check -recursive infra
+        language: system
+        files: \.tf(test\.hcl|vars)?$
+        pass_filenames: false
+
+      - id: helm-lint
+        name: helm lint
+        entry: helm lint charts/workshop
+        language: system
+        files: ^charts/
+        pass_filenames: false
+
+  # --- infrastructure security --------------------------------------------
+  # Checkov is slow enough to be annoying on every commit, so it runs on push.
+  # Skipped checks are justified in .checkov.yaml rather than silenced here.
+  - repo: https://github.com/bridgecrewio/checkov
+    rev: 3.2.334
+    hooks:
+      - id: checkov
+        stages: [pre-push]
+        args: [--config-file, .checkov.yaml]
+        pass_filenames: false

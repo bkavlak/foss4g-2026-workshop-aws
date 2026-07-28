@@ -1,0 +1,25 @@
+{
+  "participants": {
+    "user1": {
+      "hash": "f14cfca96a480205d96a76b041725210e33b4be1342301383f8ac72761b1d488",
+      "n": 16384,
+      "p": 1,
+      "r": 8,
+      "salt": "4e8ce1994cce2995b27bc89d45f03b06"
+    },
+    "user2": {
+      "hash": "df64a24c6ce272ad03c02b40f610b6e892e28f66523dbd195780096df0ac2aac",
+      "n": 16384,
+      "p": 1,
+      "r": 8,
+      "salt": "be48c1df9fa7fc361cd6dc6d0467a68b"
+    },
+    "user3": {
+      "hash": "ead07a273eec34e86fe9179023a881b2b68dd5820f8e0fb15a0662e4eb9a9cce",
+      "n": 16384,
+      "p": 1,
+      "r": 8,
+      "salt": "69dcdd155d753e2a2015ea3a39bfd3f5"
+    }
+  }
+}

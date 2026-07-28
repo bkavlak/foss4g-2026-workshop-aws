@@ -1,0 +1,11 @@
+jupyterhub
+jupyterlab
+notebook
+numpy
+pandas
+matplotlib
+shapely
+pyproj
+pyogrio
+geopandas
+rasterio

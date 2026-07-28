@@ -1,0 +1,49 @@
+# Infrastructure security scan. Run by pre-commit on push, and by `make check`.
+#
+# Every skip below is a decision with a reason, not a silenced alarm. A finding
+# that is genuinely wrong for this workshop is listed here; a finding that is
+# right gets fixed in the code instead. Two were fixed rather than skipped:
+# ECR tag immutability, and the S3 lifecycle rule that aborts incomplete
+# multipart uploads.
+
+directory:
+  - infra
+
+framework:
+  - terraform
+
+quiet: true
+compact: true
+
+# Community modules are not scanned: they are third-party code, pinned to exact
+# versions, and their findings are not ours to fix.
+download-external-modules: false
+
+skip-check:
+  # Wants a git URL with a commit hash. We pin registry modules to exact
+  # versions instead (see modules/network/main.tf), which removes the drift
+  # this check exists to prevent while staying readable.
+  - CKV_TF_1
+
+  # KMS-encrypted S3 and ECR. The bucket holds a redistributable copy of
+  # workshop material that also exists on the maintainer's laptop, and the
+  # registry holds a public-base-image derivative. SSE-S3/AES256 is configured;
+  # customer-managed keys would add per-request cost and key lifecycle for no
+  # threat this workshop faces.
+  - CKV_AWS_136
+  - CKV_AWS_145
+
+  # Versioning. The bucket is a mirror of ./data, refreshed with `aws s3 sync
+  # --delete`. Versioning would silently double the stored size of a 20 GB
+  # dataset and retain every deleted object until the workshop is torn down.
+  - CKV_AWS_21
+
+  # Access logging. Would require a second bucket, with its own lifecycle, to
+  # record reads of data we are deliberately handing to participants.
+  - CKV_AWS_18
+
+  # Cross-region replication and event notifications. Both describe a durable
+  # production dataset. This one is disposable by design and is recreated by
+  # `make data-push`.
+  - CKV_AWS_144
+  - CKV2_AWS_62

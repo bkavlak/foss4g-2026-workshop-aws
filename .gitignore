@@ -1,0 +1,33 @@
+# Participant credentials. handout.csv contains plaintext passwords and must
+# never be committed; roster.json contains only scrypt verifiers but is still
+# per-workshop state.
+/roster/*
+!/roster/.gitkeep
+
+# The dataset is pushed to S3 by `make data-push`, never through git or tofu.
+/data/*
+!/data/.gitkeep
+!/data/README.md
+
+.env
+.venv/
+
+# macOS and editor noise
+.DS_Store
+.idea/
+.vscode/
+*.swp
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# infra/.terraform.lock.hcl is deliberately NOT ignored. It pins provider
+# versions and their checksums, which is what stops a provider releasing a new
+# major overnight and changing what `tofu apply` does. Commit it.
+charts/*/charts/
+charts/*/Chart.lock

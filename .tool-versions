@@ -1,0 +1,12 @@
+# Toolchain for this repository. Install everything with: make setup
+#
+# python matches the interpreter in the participant image (Ubuntu 26.04 via
+# ghcr.io/osgeo/gdal:ubuntu-small-3.13.2), so the code you lint locally is the
+# code that runs in the cluster.
+python 3.14.6
+uv 0.11.32
+opentofu 1.9.0
+helm 3.16.3
+kubectl 1.31.3
+awscli 2.22.35
+pre-commit 4.0.1

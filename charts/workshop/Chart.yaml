@@ -1,0 +1,12 @@
+apiVersion: v2
+name: workshop
+description: A time-boxed, password-protected GDAL/Python environment for workshop participants
+type: application
+version: 0.1.0
+appVersion: "1.0"
+
+dependencies:
+  - name: jupyterhub
+    # 4.4.0 ships JupyterHub 5.5.0, which docker/requirements.txt pins to match.
+    version: "4.4.0"
+    repository: https://hub.jupyter.org/helm-chart/

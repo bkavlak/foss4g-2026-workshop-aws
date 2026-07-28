@@ -1,0 +1,90 @@
+# The workshop chart's own interface. Six keys, all of which describe the
+# workshop rather than Kubernetes:
+#
+#   image      the participant environment to run
+#   dataset    where the read-only data comes from, and who may read it
+#   seat       what one participant is allowed to consume
+#   roster     username -> scrypt verifier, produced by `workshop provision`
+#
+# Everything under `jupyterhub:` is the wiring that turns those four facts into
+# a running multi-user hub. It is fixed here on purpose: JupyterHub's chart
+# exposes several hundred settings and a workshop maintainer should not have to
+# hold any of them in their head. Values that genuinely vary per workshop are
+# supplied by infra/modules/platform/values.yaml.tftpl.
+
+image:
+  repository: workshop-participant
+  tag: v1
+
+dataset:
+  # Empty means "no dataset": the sync init container is omitted entirely and
+  # participants get an empty /data.
+  uri: ""
+  mountPath: /data
+  # IAM role assumed by the participant service account (IRSA) to read the
+  # bucket. Empty when no dataset is configured.
+  awsRoleArn: ""
+  syncImage: public.ecr.aws/aws-cli/aws-cli:2.22.35
+
+seat:
+  cpu: 1
+  memoryGi: 4
+  # Sized for the dataset copy plus working room.
+  diskGi: 30
+
+# Filled in by `tofu apply` from roster/roster.json. Left empty here so a
+# `helm template` with no values still renders.
+roster: {}
+
+jupyterhub:
+  # No hub database volume: the roster is the source of truth for identity and
+  # the workshop does not outlive the cluster.
+  hub:
+    db:
+      type: sqlite-memory
+    extraConfig:
+      00-roster-auth: |
+        # The authenticator is mounted rather than inlined so that its source
+        # lives in a .py file that the test suite can import and exercise.
+        exec(open("/etc/workshop/authenticator/roster_authenticator.py").read())
+        c.JupyterHub.authenticator_class = RosterAuthenticator
+    extraVolumes:
+      - name: roster-authenticator
+        configMap:
+          name: workshop-roster-auth
+      - name: roster
+        secret:
+          secretName: workshop-roster
+    extraVolumeMounts:
+      - name: roster-authenticator
+        mountPath: /etc/workshop/authenticator
+        readOnly: true
+      - name: roster
+        mountPath: /etc/workshop
+        readOnly: true
+
+  proxy:
+    service:
+      type: LoadBalancer
+
+  singleuser:
+    serviceAccountName: workshop-participant
+    storage:
+      # Home directories are ephemeral. A workshop seat is disposable by
+      # design; anything a participant must keep is exported before they leave.
+      type: none
+    defaultUrl: /lab
+    startTimeout: 600
+    extraEnv:
+      WORKSHOP_DATA: /data
+
+  # Reclaim a seat that has been idle for an hour so an over-provisioned
+  # cluster does not keep paying for people who left.
+  cull:
+    enabled: true
+    timeout: 3600
+    every: 300
+
+  scheduling:
+    userScheduler:
+      enabled: false

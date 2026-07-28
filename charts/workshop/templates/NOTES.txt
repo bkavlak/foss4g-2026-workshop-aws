@@ -1,0 +1,13 @@
+Workshop "{{ .Release.Name }}" is starting in namespace {{ .Release.Namespace }}.
+
+{{ len .Values.roster }} participant account(s) are configured.
+
+The load balancer takes a few minutes to become reachable. Get the URL with:
+
+  kubectl -n {{ .Release.Namespace }} get svc proxy-public \
+    -o jsonpath='http://{.status.loadBalancer.ingress[0].hostname}{"\n"}'
+
+Hand each participant one row of roster/handout.csv.
+{{ if not .Values.dataset.uri }}
+No dataset is configured: /data will be empty in every participant pod.
+{{- end }}

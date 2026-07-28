@@ -1,0 +1,10 @@
+# Normalise line endings on the way in, so a Windows or macOS checkout does not
+# show every file as modified.
+* text=auto eol=lf
+
+# Shell scripts and the preflight check must stay LF or they will not run.
+*.sh text eol=lf
+
+# Generated or vendored; keep them out of diffs and language statistics.
+infra/.terraform.lock.hcl linguist-generated=true
+docker/requirements.txt   linguist-generated=true
