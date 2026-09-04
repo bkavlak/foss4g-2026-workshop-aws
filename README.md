@@ -1,3 +1,7 @@
+
+> [!NOTE]
+> VIBEEEECODED.
+
 # Workshop environment
 
 A browser-accessible GDAL + Python environment, one seat per participant,
